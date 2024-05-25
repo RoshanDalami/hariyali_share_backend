@@ -189,3 +189,30 @@ export async function GenerateCertificate(req,res){
     return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
   }
 }
+
+export async function GetNewRequestCount(req,res){
+  try {
+    const response = await Request.find({$and:[{isApproved:null,isDeclined:null}]});
+    return res.status(200).json(new ApiResponse(200,response.length,"New request count"))
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+  }
+}
+
+export async function GetApprovedCount(req,res){
+  try {
+    const response = await Request.find({isApproved:true});
+    return res.status(200).json(new ApiResponse(200,response.length,"Approved request count"))
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+  }
+}
+
+export async function GetDeclinedCount(req,res){
+  try {
+      const response = await Request.find({isDeclined:true});
+      return res.status(200).json(new ApiResponse(200,response.length, "Declined request Count"))
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(500,null,'Internal Server Error'))
+  }
+}
