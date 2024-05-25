@@ -1,6 +1,7 @@
 import { Request } from "../Model/request.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
+import { getDistrictCode } from "../utils/GetDistrictCode.js";
 export async function CreateShareRequest(req, res) {
   try {
     const body = req?.body;
@@ -157,6 +158,34 @@ export async function getDeclinedRequest(req,res){
     const response = await Request.find({isDeclined:true}).sort({_id:'desc'});
     return res.status(200).json(new ApiResponse(200,response,'Decliend Share request list generated'))
   } catch (error) {
+    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+  }
+}
+
+
+
+export async function GenerateCertificate(req,res){
+  try {
+    const {id} = req.params;
+    const response = await Request.findOne({_id:id})
+    const districtId = response.permanentAddress?.districtId
+    const code = getDistrictCode(districtId);
+    const latestRequest = await Request.findOne({isApproved:true}).sort({_id:'desc'});
+    console.log()
+    let finalCode = `${code}-0001`;
+    if(latestRequest){
+      const latestNumber = parseInt(latestRequest.shareCertificateNumber.split('-')[1],10);
+      finalCode = code+"-"+(latestNumber+1).toString().padStart(4, "0");
+    };
+    const finalResponse = await Request.findOneAndUpdate({_id:id},{
+      $set:{
+        shareCertificateNumber:finalCode
+      }
+    },{new:true})
+    return res.status(200).json(new ApiResponse(200,finalResponse,"Certificate generated"))
+
+  } catch (error) {
+    console.log(error)
     return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
   }
 }

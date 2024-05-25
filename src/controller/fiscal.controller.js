@@ -1,5 +1,5 @@
-import { ApiResponse } from "../utils/ApiResponse";
-import { Fiscal } from "../Model/office/fiscal.model";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { Fiscal } from "../Model/office/fiscal.model.js";
 export async function createFiscal(req, res) {
   try {
     const { fiscalYear, startYear, endYear, startDate, endDate, status ,_id } =

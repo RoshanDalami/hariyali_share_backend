@@ -8,7 +8,8 @@ import {
   declineRequest,
   acceptRequest,
   getAcceptedRequest,
-  getDeclinedRequest
+  getDeclinedRequest,
+  GenerateCertificate
 } from "../controller/request.controller.js";
 import { validateToken } from "../middleware/verifyToken.js";
 const RequestRouter = express.Router();
@@ -26,12 +27,13 @@ RequestRouter.route("/createRequest").post(
   ]),
   CreateShareRequest
 );
-RequestRouter.route("/getRequest").get(GetShareRequest);
-RequestRouter.route("/getRequestById/:id").get(GetShareRequestById);
-RequestRouter.route("/requestOpen/:id").get(updateOpenStatus);
-RequestRouter.route("/declineRequest").post(declineRequest);
-RequestRouter.route("/acceptRequest").post(acceptRequest);
-RequestRouter.route("/getAcceptedRequest").get(getAcceptedRequest)
-RequestRouter.route("/getDeclinedRequest").get(getDeclinedRequest)
+RequestRouter.route("/getRequest").get(validateToken,GetShareRequest);
+RequestRouter.route("/getRequestById/:id").get(validateToken,GetShareRequestById);
+RequestRouter.route("/requestOpen/:id").get(validateToken,updateOpenStatus);
+RequestRouter.route("/declineRequest").post(validateToken,declineRequest);
+RequestRouter.route("/acceptRequest").post(validateToken,acceptRequest);
+RequestRouter.route("/getAcceptedRequest").get(validateToken,getAcceptedRequest)
+RequestRouter.route("/getDeclinedRequest").get(validateToken,getDeclinedRequest)
+RequestRouter.route("/generateCertificate/:id").get(GenerateCertificate)
 
 export default RequestRouter;

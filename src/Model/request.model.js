@@ -106,6 +106,9 @@ const requestSchema = new Schema({
   },
   remarks:{
     type:String
+  },
+  shareCertificateNumber:{
+    type:String
   }
 });
 
