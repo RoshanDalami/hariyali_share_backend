@@ -5,24 +5,27 @@ import { getDistrictCode } from "../utils/GetDistrictCode.js";
 export async function CreateShareRequest(req, res) {
   try {
     const body = req?.body;
-    console.log(body);
-    console.log(JSON.parse(body.permanentAddress));
+    const userId = req.user.id;
+
     const frontImage = req?.files?.citizenshipFrontImage[0]?.path;
-    const backImage = req?.files?.citizenshipBackImage[0]?.path;
-    console.log(frontImage, backImage);
+    const voucherImage = req?.files?.voucherImage[0]?.path;
+    const personalImage = req?.files?.personalImage[0]?.path;
+
     const frontImageCloudinary = await uploadOnCloudinary(frontImage);
-    const backImageCloudinary = await uploadOnCloudinary(backImage);
+    const voucherImageCloudinary = await uploadOnCloudinary(voucherImage);
+    const personalImageCloudinary = await uploadOnCloudinary(personalImage);
     const newRequest = new Request({
       ...body,
       permanentAddress: JSON.parse(body.permanentAddress),
       temporaryAddress: JSON.parse(body.temporaryAddress),
-      children: JSON.parse(body.children),
       citizenshipFrontImage: frontImageCloudinary.url,
-      citizenshipBackImage: backImageCloudinary.url,
+      voucherImage: voucherImageCloudinary.url,
+      personalImage: personalImageCloudinary?.url,
       totalShareAmount: JSON.parse(body.totalShareAmount),
+      nominee: JSON.parse(body?.nominee),
+      userId: userId,
     });
     const savedData = await newRequest.save();
-
     return res
       .status(200)
       .json(new ApiResponse(200, body, "Share request created"));
@@ -35,10 +38,10 @@ export async function CreateShareRequest(req, res) {
 }
 
 export async function GetShareRequest(req, res) {
-  // 
+  //
   try {
     const reponse = await Request.find({
-      $and: [{ isDeclined: null, isApproved: null }]
+      $and: [{ isDeclined: null, isApproved: null }],
     }).sort({ _id: "desc" });
     return res
       .status(200)
@@ -89,13 +92,13 @@ export async function updateOpenStatus(req, res) {
 }
 export async function declineRequest(req, res) {
   try {
-    const { id , remarks } = req.body;
+    const { id, remarks } = req.body;
     const response = await Request.findOneAndUpdate(
       { _id: id },
       {
         $set: {
           isDeclined: true,
-          remarks:remarks
+          remarks: remarks,
         },
       }
     );
@@ -111,24 +114,26 @@ export async function declineRequest(req, res) {
 
 export async function acceptRequest(req, res) {
   try {
-    const { id , shareQuantity } = req.body;
-    const request = await Request.findOne({}).sort({identityNumber:-1});
+    const { id, shareQuantity } = req.body;
+    const request = await Request.findOne({}).sort({ identityNumber: -1 });
 
     let shareNumberStart = 0;
     let shareNumberEnd = shareQuantity;
 
-    const lastElement = await Request.findOne({isApproved:true}).sort({_id:-1});
-    if(lastElement){
-      shareNumberStart  = lastElement.shareNumberEnd + 1
-      shareNumberEnd = shareNumberStart + (shareQuantity+1)
+    const lastElement = await Request.findOne({ isApproved: true }).sort({
+      _id: -1,
+    });
+    if (lastElement) {
+      shareNumberStart = lastElement.shareNumberEnd + 1;
+      shareNumberEnd = shareNumberStart + (shareQuantity + 1);
     }
     const response = await Request.findOneAndUpdate(
       { _id: id },
       {
         $set: {
           isApproved: true,
-          shareNumberStart:shareNumberStart,
-          shareNumberEnd:shareNumberEnd
+          shareNumberStart: shareNumberStart,
+          shareNumberEnd: shareNumberEnd,
         },
       }
     );
@@ -142,77 +147,196 @@ export async function acceptRequest(req, res) {
   }
 }
 
-
-export async function getAcceptedRequest(req,res){
+export async function getAcceptedRequest(req, res) {
   try {
-      const response = await Request.find({isApproved:true}).sort({_id:'desc'});
-      return res.status(200).json(new ApiResponse(200,response,"Accepted Share request list generated"))
+    const response = await Request.find({ isApproved: true }).sort({
+      _id: "desc",
+    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, response, "Accepted Share request list generated")
+      );
   } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
-  }
-};
-
-
-export async function getDeclinedRequest(req,res){
-  try {
-    const response = await Request.find({isDeclined:true}).sort({_id:'desc'});
-    return res.status(200).json(new ApiResponse(200,response,'Decliend Share request list generated'))
-  } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
 
-
-
-export async function GenerateCertificate(req,res){
+export async function getDeclinedRequest(req, res) {
   try {
-    const {id} = req.params;
-    const response = await Request.findOne({_id:id})
-    const districtId = response.permanentAddress?.districtId
+    const response = await Request.find({ isDeclined: true }).sort({
+      _id: "desc",
+    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, response, "Decliend Share request list generated")
+      );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GenerateCertificate(req, res) {
+  try {
+    const { id } = req.params;
+    const response = await Request.findOne({ _id: id });
+    const districtId = response.permanentAddress?.districtId;
     const code = getDistrictCode(districtId);
-    const latestRequest = await Request.findOne({isApproved:true}).sort({_id:'desc'});
-    console.log()
+    const latestRequest = await Request.findOne({ isApproved: true }).sort({
+      _id: "desc",
+    });
+    console.log();
     let finalCode = `${code}-0001`;
-    if(latestRequest){
-      const latestNumber = parseInt(latestRequest.shareCertificateNumber.split('-')[1],10);
-      finalCode = code+"-"+(latestNumber+1).toString().padStart(4, "0");
-    };
-    const finalResponse = await Request.findOneAndUpdate({_id:id},{
-      $set:{
-        shareCertificateNumber:finalCode
-      }
-    },{new:true})
-    return res.status(200).json(new ApiResponse(200,finalResponse,"Certificate generated"))
-
+    if (latestRequest) {
+      const latestNumber = parseInt(
+        latestRequest.shareCertificateNumber.split("-")[1],
+        10
+      );
+      finalCode = code + "-" + (latestNumber + 1).toString().padStart(4, "0");
+    }
+    const finalResponse = await Request.findOneAndUpdate(
+      { _id: id },
+      {
+        $set: {
+          shareCertificateNumber: finalCode,
+        },
+      },
+      { new: true }
+    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, finalResponse, "Certificate generated"));
   } catch (error) {
-    console.log(error)
+    console.log(error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetNewRequestCount(req, res) {
+  try {
+    const response = await Request.find({
+      $and: [{ isApproved: null, isDeclined: null }],
+    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response.length, "New request count"));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetApprovedCount(req, res) {
+  try {
+    const response = await Request.find({ isApproved: true });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response.length, "Approved request count"));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetDeclinedCount(req, res) {
+  try {
+    const response = await Request.find({ isDeclined: true });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response.length, "Declined request Count"));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetRequestByUserId(req, res) {
+  try {
+    const userId = req.user.id;
+    const response = await Request.find({ userId: userId });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response, "Request generated ..."));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetUserShareQuantity(req, res) {
+  try {
+    const userId = req.user.id;
+    const response = await Request.find({ userId: userId });
+    const totalShare = response?.map((item)=>{return item.shareQuantity}).reduce((acc,amount)=>acc+amount , 0);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, totalShare, "Share Quantity"));
+  } catch (error) {
+
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetUserShareAmount(req,res){
+  try {
+      const userId = req.user.id;
+      const response = await Request.find({userId:userId});
+      const totalAmount = response?.map((item)=>{return item.totalShareAmount}).reduce((acc,amount)=>acc+amount , 0);
+      return res.status(200).json(new ApiResponse(200,totalAmount,"Total share amount"))
+  } catch (error) {
     return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
   }
 }
 
-export async function GetNewRequestCount(req,res){
+export async function GetUserTotalRequest(req,res){
   try {
-    const response = await Request.find({$and:[{isApproved:null,isDeclined:null}]});
-    return res.status(200).json(new ApiResponse(200,response.length,"New request count"))
+    const userId = req.user.id;
+    const response = await Request.find({userId:userId});
+    return res.status(200).json(new ApiResponse(200,response?.length,"Total Share Request generated "))
   } catch (error) {
     return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
   }
 }
 
-export async function GetApprovedCount(req,res){
+export async function GetUserTotalPendingRequest(req,res){
   try {
-    const response = await Request.find({isApproved:true});
-    return res.status(200).json(new ApiResponse(200,response.length,"Approved request count"))
+    const userId = req.user.id;
+    const response = await Request.find({$and:[{userId:userId,isDeclined: null, isApproved: null }]});
+    return res.status(200).json(new ApiResponse(200,response.length,'Pending request '))
+  } catch (error) {
+   return res.status(500).json(new ApiResponse(500,null,"Internal Server Error")) 
+  }
+}
+
+export async function GetUserTotalAcceptedRequest(req,res){
+  try {
+    const userId = req.user.id;
+    const response = await Request.find({$and:[{userId:userId,isApproved:true}]});
+    return res.status(200).json(new ApiResponse(200,response?.length,"Total Accepted Request"))
   } catch (error) {
     return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
   }
 }
-
-export async function GetDeclinedCount(req,res){
+export async function GetUserTotalDeclinedRequest(req,res){
   try {
-      const response = await Request.find({isDeclined:true});
-      return res.status(200).json(new ApiResponse(200,response.length, "Declined request Count"))
+    const userId = req.user.id 
+    const response = await Request.find({$and:[{userId:userId,isDeclined:true}]})
+    return res.status(200).json(new ApiResponse(200,response?.length,"Total Accepted Request"))
   } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,'Internal Server Error'))
+    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
   }
 }

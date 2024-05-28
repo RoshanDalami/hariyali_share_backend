@@ -20,15 +20,42 @@ const addressSchema = new Schema({
     type: String,
   },
 });
-const children = new Schema({
-  childrenName: {
-    type: String,
-  },
-});
+
+const nomineeSchema = new Schema({
+name:{
+  type:String,
+  required:true 
+},
+pernamentAddress:addressSchema,
+temporaryAddress:addressSchema,
+contactNumber:{
+  type:Number,
+  required:true
+},
+email:{
+  type:String,
+  required:true 
+},
+relation:{
+  type:String,
+  required:true
+},
+citizenship:{
+  type:String,
+  required:true
+}, 
+})
 const requestSchema = new Schema({
+  userId:{
+    type:Schema.Types.ObjectId,
+    ref:"User"
+  },
   name: {
     type: String,
     required: true,
+  },
+  personalImage:{
+type:String
   },
   grandFatherName: {
     type: String,
@@ -44,9 +71,8 @@ const requestSchema = new Schema({
   },
   spouseName: {
     type: String,
-    required: true,
+    
   },
-  children: [children],
   citizenshipNo: {
     type: String,
     required: true,
@@ -109,7 +135,22 @@ const requestSchema = new Schema({
   },
   shareCertificateNumber:{
     type:String
-  }
+  },
+  voucherImage:{
+    type:String
+  },
+  isPaid:{
+    type:Boolean,
+    default:false
+  },
+  nid:{
+    type:String,
+  },
+  dateofBirth:{
+    type:String
+  },
+  nominee:nomineeSchema
+  
 });
 
 export const Request =
