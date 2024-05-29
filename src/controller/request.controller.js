@@ -185,16 +185,16 @@ export async function GenerateCertificate(req, res) {
   try {
     const { id } = req.params;
     const response = await Request.findOne({ _id: id });
-    const districtId = response.permanentAddress?.districtId;
+    const districtId = response?.permanentAddress?.districtId;
     const code = getDistrictCode(districtId);
     const latestRequest = await Request.findOne({ isApproved: true }).sort({
       _id: "desc",
     });
     console.log();
     let finalCode = `${code}-0001`;
-    if (latestRequest) {
+    if (latestRequest?.shareCertificateNumber !== '') {
       const latestNumber = parseInt(
-        latestRequest.shareCertificateNumber.split("-")[1],
+        latestRequest?.shareCertificateNumber?.split("-")[1],
         10
       );
       finalCode = code + "-" + (latestNumber + 1).toString().padStart(4, "0");

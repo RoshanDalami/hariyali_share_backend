@@ -10,7 +10,7 @@ const adminSchema = new Schema({
         type:String,
         required:true 
     },
-    contact:{
+    contactNumber:{
         type:Number,
         required:true 
     },
