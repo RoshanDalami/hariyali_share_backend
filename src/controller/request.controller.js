@@ -8,8 +8,15 @@ export async function CreateShareRequest(req, res) {
     const userId = req.user.id;
 
     const frontImage = req?.files?.citizenshipFrontImage[0]?.path;
-    const voucherImage = req?.files?.voucherImage[0]?.path;
     const personalImage = req?.files?.personalImage[0]?.path;
+    let voucherImage;
+    if (
+      req.files &&
+      Array.isArray(req?.files?.voucherImage) &&
+      req.files.voucherImage.length > 0
+    ) {
+      voucherImage = req?.files?.voucherImage[0]?.path;
+    }
 
     const frontImageCloudinary = await uploadOnCloudinary(frontImage);
     const voucherImageCloudinary = await uploadOnCloudinary(voucherImage);
@@ -19,7 +26,7 @@ export async function CreateShareRequest(req, res) {
       permanentAddress: JSON.parse(body.permanentAddress),
       temporaryAddress: JSON.parse(body.temporaryAddress),
       citizenshipFrontImage: frontImageCloudinary.url,
-      voucherImage: voucherImageCloudinary.url,
+      voucherImage: voucherImageCloudinary.url || "",
       personalImage: personalImageCloudinary?.url,
       totalShareAmount: JSON.parse(body.totalShareAmount),
       nominee: JSON.parse(body?.nominee),
@@ -114,9 +121,7 @@ export async function declineRequest(req, res) {
 
 export async function acceptRequest(req, res) {
   try {
-    const { id, shareQuantity } = req.body;
-    const request = await Request.findOne({}).sort({ identityNumber: -1 });
-
+    const { id, shareQuantity, shareApprovedDate } = req.body;
     let shareNumberStart = 0;
     let shareNumberEnd = shareQuantity;
 
@@ -134,6 +139,7 @@ export async function acceptRequest(req, res) {
           isApproved: true,
           shareNumberStart: shareNumberStart,
           shareNumberEnd: shareNumberEnd,
+          shareApprovedDate: shareApprovedDate,
         },
       }
     );
@@ -192,7 +198,7 @@ export async function GenerateCertificate(req, res) {
     });
     console.log();
     let finalCode = `${code}-0001`;
-    if (latestRequest?.shareCertificateNumber !== '') {
+    if (latestRequest?.shareCertificateNumber !== "") {
       const latestNumber = parseInt(
         latestRequest?.shareCertificateNumber?.split("-")[1],
         10
@@ -278,65 +284,126 @@ export async function GetUserShareQuantity(req, res) {
   try {
     const userId = req.user.id;
     const response = await Request.find({ userId: userId });
-    const totalShare = response?.map((item)=>{return item.shareQuantity}).reduce((acc,amount)=>acc+amount , 0);
+    const totalShare = response
+      ?.map((item) => {
+        return item.shareQuantity;
+      })
+      .reduce((acc, amount) => acc + amount, 0);
 
     return res
       .status(200)
       .json(new ApiResponse(200, totalShare, "Share Quantity"));
   } catch (error) {
-
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
 
-export async function GetUserShareAmount(req,res){
+export async function GetUserShareAmount(req, res) {
   try {
-      const userId = req.user.id;
-      const response = await Request.find({userId:userId});
-      const totalAmount = response?.map((item)=>{return item.totalShareAmount}).reduce((acc,amount)=>acc+amount , 0);
-      return res.status(200).json(new ApiResponse(200,totalAmount,"Total share amount"))
+    const userId = req.user.id;
+    const response = await Request.find({ userId: userId });
+    const totalAmount = response
+      ?.map((item) => {
+        return item.totalShareAmount;
+      })
+      .reduce((acc, amount) => acc + amount, 0);
+    return res
+      .status(200)
+      .json(new ApiResponse(200, totalAmount, "Total share amount"));
   } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
 
-export async function GetUserTotalRequest(req,res){
+export async function GetUserTotalRequest(req, res) {
   try {
     const userId = req.user.id;
-    const response = await Request.find({userId:userId});
-    return res.status(200).json(new ApiResponse(200,response?.length,"Total Share Request generated "))
+    const response = await Request.find({ userId: userId });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, response?.length, "Total Share Request generated ")
+      );
   } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
 
-export async function GetUserTotalPendingRequest(req,res){
+export async function GetUserTotalPendingRequest(req, res) {
   try {
     const userId = req.user.id;
-    const response = await Request.find({$and:[{userId:userId,isDeclined: null, isApproved: null }]});
-    return res.status(200).json(new ApiResponse(200,response.length,'Pending request '))
+    const response = await Request.find({
+      $and: [{ userId: userId, isDeclined: null, isApproved: null }],
+    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response.length, "Pending request "));
   } catch (error) {
-   return res.status(500).json(new ApiResponse(500,null,"Internal Server Error")) 
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
 
-export async function GetUserTotalAcceptedRequest(req,res){
+export async function GetUserTotalAcceptedRequest(req, res) {
   try {
     const userId = req.user.id;
-    const response = await Request.find({$and:[{userId:userId,isApproved:true}]});
-    return res.status(200).json(new ApiResponse(200,response?.length,"Total Accepted Request"))
+    const response = await Request.find({
+      $and: [{ userId: userId, isApproved: true }],
+    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response?.length, "Total Accepted Request"));
   } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
-export async function GetUserTotalDeclinedRequest(req,res){
+export async function GetUserTotalDeclinedRequest(req, res) {
   try {
-    const userId = req.user.id 
-    const response = await Request.find({$and:[{userId:userId,isDeclined:true}]})
-    return res.status(200).json(new ApiResponse(200,response?.length,"Total Accepted Request"))
+    const userId = req.user.id;
+    const response = await Request.find({
+      $and: [{ userId: userId, isDeclined: true }],
+    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response?.length, "Total Accepted Request"));
   } catch (error) {
-    return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+
+export async function GetUserDetails(req, res) {
+  try {
+    const { certificateNumber, contactNumber } = req.query;
+    const response = await Request.findOne({
+      $and: [
+        {
+          shareCertificateNumber: certificateNumber.trim(),
+          contactNumber: contactNumber.trim(),
+        },
+      ],
+    });
+    if(!response){
+      return res.status(400).json(new ApiResponse("Invalid details"))
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, response, "Generated with certificate Numeber and")
+      );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }

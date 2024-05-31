@@ -19,7 +19,8 @@ import {
   GetUserTotalRequest,
   GetUserTotalAcceptedRequest,
   GetUserTotalDeclinedRequest,
-  GetUserTotalPendingRequest
+  GetUserTotalPendingRequest,
+  GetUserDetails
 } from "../controller/request.controller.js";
 import { validateToken } from "../middleware/verifyToken.js";
 const RequestRouter = express.Router();
@@ -66,4 +67,5 @@ RequestRouter.route("/getUserShareRequest").get(validateToken,GetUserTotalReques
 RequestRouter.route("/getUserTotalPendingRequest").get(validateToken,GetUserTotalPendingRequest)
 RequestRouter.route("/getUserAcceptedRequest").get(validateToken,GetUserTotalAcceptedRequest)
 RequestRouter.route("/getUserDeclinedRequest").get(validateToken,GetUserTotalDeclinedRequest)
+RequestRouter.route("/getDetailsWithNumber").get(validateToken,GetUserDetails)
 export default RequestRouter;

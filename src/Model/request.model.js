@@ -149,6 +149,9 @@ type:String
   dateofBirth:{
     type:String
   },
+  shareApprovedDate:{
+    type:String,
+  },
   nominee:nomineeSchema
   
 });

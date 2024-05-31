@@ -23,7 +23,7 @@ export async function CreateUser(req, res) {
 
     const hashedPassword = await bcryptjs.hash(password, 10);
     const newUser = new User({
-      email,
+      email:email.trim(),
       password: hashedPassword,
       username,
       contactNumber,
@@ -43,8 +43,8 @@ export async function CreateUser(req, res) {
 export async function LoginUser(req, res) {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: email });
-    console.log(user);
+    const user = await User.findOne({ email: email.trim() });
+    
     if (!user)
       return res
         .status(400)
