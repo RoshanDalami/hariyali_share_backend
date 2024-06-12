@@ -20,7 +20,8 @@ import {
   GetUserTotalAcceptedRequest,
   GetUserTotalDeclinedRequest,
   GetUserTotalPendingRequest,
-  GetUserDetails
+  GetUserDetails,
+  DeleteRequest
 } from "../controller/request.controller.js";
 import { validateToken } from "../middleware/verifyToken.js";
 const RequestRouter = express.Router();
@@ -68,4 +69,5 @@ RequestRouter.route("/getUserTotalPendingRequest").get(validateToken,GetUserTota
 RequestRouter.route("/getUserAcceptedRequest").get(validateToken,GetUserTotalAcceptedRequest)
 RequestRouter.route("/getUserDeclinedRequest").get(validateToken,GetUserTotalDeclinedRequest)
 RequestRouter.route("/getDetailsWithNumber").get(validateToken,GetUserDetails)
+RequestRouter.route("/deleteRequest/:id").delete(validateToken,DeleteRequest)
 export default RequestRouter;

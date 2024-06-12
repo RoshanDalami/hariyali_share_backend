@@ -1,4 +1,3 @@
-import { response } from "express";
 import { District } from "../Model/office/district.model.js";
 import { Palika } from "../Model/office/palika.model.js";
 import { State } from "../Model/office/state.model.js";
@@ -6,37 +5,59 @@ import { Request } from "../Model/request.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { getDistrictCode } from "../utils/GetDistrictCode.js";
+import { Fiscal } from "../Model/office/fiscal.model.js";
 export async function CreateShareRequest(req, res) {
   try {
+    const fiscalYear = await Fiscal.findOne({status:true})
     const body = req?.body;
     const userId = req.user.id;
+    if (body?._id) {
+      const response = await Request.findOneAndUpdate(
+        { _id: body._id },
+        {
+          ...body,
+          fiscalYear:fiscalYear._id,
+          permanentAddress: JSON.parse(body.permanentAddress),
+          temporaryAddress: JSON.parse(body.temporaryAddress),
+          totalShareAmount: JSON.parse(body.totalShareAmount),
+          nominee: JSON.parse(body?.nominee),
+          userId: userId,
+        },
+        { new: true }
+      );
+      return res
+        .status(200)
+        .json(new ApiResponse(200, response, "Updated successfully"));
+    } else {
+      const frontImage = req?.files?.citizenshipFrontImage[0]?.path;
+      const personalImage = req?.files?.personalImage[0]?.path;
+      let voucherImage;
+      if (
+        req.files &&
+        Array.isArray(req?.files?.voucherImage) &&
+        req.files.voucherImage.length > 0
+      ) {
+        voucherImage = req?.files?.voucherImage[0]?.path;
+      }
 
-    const frontImage = req?.files?.citizenshipFrontImage[0]?.path;
-    const personalImage = req?.files?.personalImage[0]?.path;
-    let voucherImage;
-    if (
-      req.files &&
-      Array.isArray(req?.files?.voucherImage) &&
-      req.files.voucherImage.length > 0
-    ) {
-      voucherImage = req?.files?.voucherImage[0]?.path;
+      const frontImageCloudinary = await uploadOnCloudinary(frontImage);
+      const voucherImageCloudinary = await uploadOnCloudinary(voucherImage);
+      const personalImageCloudinary = await uploadOnCloudinary(personalImage);
+
+      const newRequest = new Request({
+        ...body,
+        permanentAddress: JSON.parse(body.permanentAddress),
+        temporaryAddress: JSON.parse(body.temporaryAddress),
+        citizenshipFrontImage: frontImageCloudinary.url,
+        voucherImage: voucherImageCloudinary.url || "",
+        personalImage: personalImageCloudinary?.url,
+        totalShareAmount: JSON.parse(body.totalShareAmount),
+        nominee: JSON.parse(body?.nominee),
+        userId: userId,
+      });
+      const savedData = await newRequest.save();
     }
 
-    const frontImageCloudinary = await uploadOnCloudinary(frontImage);
-    const voucherImageCloudinary = await uploadOnCloudinary(voucherImage);
-    const personalImageCloudinary = await uploadOnCloudinary(personalImage);
-    const newRequest = new Request({
-      ...body,
-      permanentAddress: JSON.parse(body.permanentAddress),
-      temporaryAddress: JSON.parse(body.temporaryAddress),
-      citizenshipFrontImage: frontImageCloudinary.url,
-      voucherImage: voucherImageCloudinary.url || "",
-      personalImage: personalImageCloudinary?.url,
-      totalShareAmount: JSON.parse(body.totalShareAmount),
-      nominee: JSON.parse(body?.nominee),
-      userId: userId,
-    });
-    const savedData = await newRequest.save();
     return res
       .status(200)
       .json(new ApiResponse(200, body, "Share request created"));
@@ -115,22 +136,21 @@ export async function GetShareRequestById(req, res) {
       palikaId: responseById?.nominee?.temporaryAddress?.palikaId,
     });
 
-    const data ={
+    const data = {
       ...responseById?._doc,
-      pernamentStateName:permanentState?.stateNameNep,
-      tempStateName:tempState?.stateNameNep,
-      pernamentDistrictName:permanentDistrict?.districtNameNep,
-      tempDistrictName:tempDistrict?.districtNameNep,
-      pernamentPalikaName:permanentPalika?.palikaNameNep,
-      tempPalikaName:tempPalika?.palikaNameNep,
-      nomineePernamentStateName:nomineePermanentState?.stateNameNep,
-      nomineeTepmStateName:nomineeTempState?.stateNameNep,
-      nomineePernamentDistrictName:nomineePermanentDistrict?.districtNameNep,
-      nomineeTempDistrictName : nomineeTempDistrict?.districtNameNep,
-      nomineePernamentPalikaName:nomineePernamentPalika?.palikaNameNep,
-      nomineeTempPalikaName:nomineeTempPalika?.palikaNameNep
-
-    }
+      pernamentStateName: permanentState?.stateNameNep,
+      tempStateName: tempState?.stateNameNep,
+      pernamentDistrictName: permanentDistrict?.districtNameNep,
+      tempDistrictName: tempDistrict?.districtNameNep,
+      pernamentPalikaName: permanentPalika?.palikaNameNep,
+      tempPalikaName: tempPalika?.palikaNameNep,
+      nomineePernamentStateName: nomineePermanentState?.stateNameNep,
+      nomineeTepmStateName: nomineeTempState?.stateNameNep,
+      nomineePernamentDistrictName: nomineePermanentDistrict?.districtNameNep,
+      nomineeTempDistrictName: nomineeTempDistrict?.districtNameNep,
+      nomineePernamentPalikaName: nomineePernamentPalika?.palikaNameNep,
+      nomineeTempPalikaName: nomineeTempPalika?.palikaNameNep,
+    };
 
     return res
       .status(200)
@@ -185,19 +205,84 @@ export async function declineRequest(req, res) {
   }
 }
 
+// export async function acceptRequest(req, res) {
+//   try {
+//     const { id, shareQuantity, shareApprovedDate } = req.body;
+//     let shareNumberStart = 0;
+//     let shareNumberEnd = shareQuantity;
+
+//     const lastElement = await Request.findOne({ isApproved: true }).sort({
+//       _id: -1,
+//     });
+//     if (lastElement) {
+//       shareNumberStart = lastElement.shareNumberEnd + 1;
+//       shareNumberEnd = shareNumberStart + (shareQuantity + 1);
+//     }
+//     const response = await Request.findOneAndUpdate(
+//       { _id: id },
+//       {
+//         $set: {
+//           isApproved: true,
+//           shareNumberStart: shareNumberStart,
+//           shareNumberEnd: shareNumberEnd,
+//           shareApprovedDate: shareApprovedDate,
+//         },
+//       }
+//     );
+//     if (response) {
+//       const response = await Request.findOne({ _id: id });
+//       console.log(response);
+//       const districtId = response?.permanentAddress?.districtId;
+//       const code = getDistrictCode(districtId);
+//       const latestRequest = await Request.find({
+//         isApproved: true,
+//         shareCertificateNumber: { $ne: null, $ne: "" },
+//       }).sort({ shareCertificateNumber: -1 });
+//       let finalCode;
+//       if (latestRequest?.shareCertificateNumber != "") {
+//         const latestNumber = parseInt(
+//           latestRequest?.shareCertificateNumber?.split("-")[1],
+//           10
+//         );
+
+//         finalCode = code + "-" + (latestNumber + 1).toString().padStart(4, "0");
+//       } else {
+//         finalCode = `${code}-0001`;
+//       }
+
+//       await Request.findOneAndUpdate(
+//         { _id: id },
+//         {
+//           $set: {
+//             shareCertificateNumber: finalCode,
+//           },
+//         },
+//         { new: true }
+//       );
+//     }
+//     return res
+//       .status(200)
+//       .json(new ApiResponse(200, null, "Application Accepted successfully"));
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json(new ApiResponse(500, null, "Internal Server Error"));
+//   }
+// }
 export async function acceptRequest(req, res) {
   try {
     const { id, shareQuantity, shareApprovedDate } = req.body;
     let shareNumberStart = 0;
     let shareNumberEnd = shareQuantity;
 
-    const lastElement = await Request.findOne({ isApproved: true }).sort({
-      _id: -1,
-    });
+    // Fetch the last approved request to determine the starting share number
+    const lastElement = await Request.findOne({ isApproved: true }).sort({ _id: -1 });
     if (lastElement) {
       shareNumberStart = lastElement.shareNumberEnd + 1;
-      shareNumberEnd = shareNumberStart + (shareQuantity + 1);
+      shareNumberEnd = shareNumberStart + shareQuantity;
     }
+
+    // Update the request to be approved and set the share numbers and approval date
     const response = await Request.findOneAndUpdate(
       { _id: id },
       {
@@ -209,13 +294,47 @@ export async function acceptRequest(req, res) {
         },
       }
     );
-    return res
-      .status(200)
-      .json(new ApiResponse(200, null, "Application Accepted successfully"));
+
+    if (response) {
+      const updatedRequest = await Request.findOne({ _id: id });
+      console.log(updatedRequest);
+
+      const districtId = updatedRequest?.permanentAddress?.districtId;
+      const code = getDistrictCode(districtId);
+
+      // Fetch the latest approved request with a non-null, non-empty share certificate number
+      const latestRequest = await Request.find({
+        isApproved: true,
+        shareCertificateNumber: { $ne: null, $ne: "" },
+      }).sort({ shareCertificateNumber: -1 }).limit(1);
+
+      let finalCode;
+      if (latestRequest.length > 0 && latestRequest[0].shareCertificateNumber) {
+        const latestNumber = parseInt(latestRequest[0].shareCertificateNumber.split("-")[1], 10);
+
+        if (!isNaN(latestNumber)) {
+          finalCode = code + "-" + (latestNumber + 1).toString().padStart(4, "0");
+        } else {
+          finalCode = `${code}-0001`;
+        }
+      } else {
+        finalCode = `${code}-0001`;
+      }
+
+      await Request.findOneAndUpdate(
+        { _id: id },
+        {
+          $set: {
+            shareCertificateNumber: finalCode,
+          },
+        },
+        { new: true }
+      );
+    }
+
+    return res.status(200).json(new ApiResponse(200, null, "Application Accepted successfully"));
   } catch (error) {
-    return res
-      .status(500)
-      .json(new ApiResponse(500, null, "Internal Server Error"));
+    return res.status(500).json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
 
@@ -256,35 +375,61 @@ export async function getDeclinedRequest(req, res) {
 export async function GenerateCertificate(req, res) {
   try {
     const { id } = req.params;
+
+    // Fetch the request by ID
     const response = await Request.findOne({ _id: id });
+    if (!response) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Request not found"));
+    }
+
+    // Get the district ID from the request's permanent address
     const districtId = response?.permanentAddress?.districtId;
+    if (!districtId) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "District ID not found in request"));
+    }
+
+    // Generate the district code
     const code = getDistrictCode(districtId);
-    const latestRequest = await Request.findOne({ isApproved: true }).sort({
-      _id: "desc",
-    });
-    console.log();
-    let finalCode = `${code}-0001`;
-    if (latestRequest?.shareCertificateNumber !== "") {
+
+    // Find the latest approved request to get the latest share certificate number
+    const latest = await Request.find({
+      isApproved: true,
+      shareCertificateNumber: { $ne: null, $ne: "" },
+    }).sort({ shareCertificateNumber: -1 });
+    let latestRequest = latest[0];
+    console.log(latestRequest);
+    let finalCode;
+    if (latestRequest?.shareCertificateNumber) {
+      // Parse the latest share certificate number and increment it
       const latestNumber = parseInt(
-        latestRequest?.shareCertificateNumber?.split("-")[1],
+        latestRequest.shareCertificateNumber.split("-")[1],
         10
       );
-      finalCode = code + "-" + (latestNumber + 1).toString().padStart(4, "0");
+      const incrementedNumber = latestNumber + 1;
+      finalCode = `${code}-${incrementedNumber.toString().padStart(4, "0")}`;
+    } else {
+      // If no previous share certificate number is found, start with 0001
+      finalCode = `${code}-0001`;
     }
+
+    console.log(finalCode);
+
+    // Update the request with the new share certificate number
     const finalResponse = await Request.findOneAndUpdate(
       { _id: id },
-      {
-        $set: {
-          shareCertificateNumber: finalCode,
-        },
-      },
+      { $set: { shareCertificateNumber: finalCode } },
       { new: true }
     );
+
     return res
       .status(200)
       .json(new ApiResponse(200, finalResponse, "Certificate generated"));
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Internal Server Error"));
@@ -467,6 +612,19 @@ export async function GetUserDetails(req, res) {
       .json(
         new ApiResponse(200, response, "Generated with certificate Numeber and")
       );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+}
+export async function DeleteRequest(req, res) {
+  try {
+    const { id } = req.params;
+    const response = await Request.findOneAndDelete({ _id: id });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { success: true }, "Deleted successfully"));
   } catch (error) {
     return res
       .status(500)

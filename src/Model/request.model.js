@@ -22,40 +22,44 @@ const addressSchema = new Schema({
 });
 
 const nomineeSchema = new Schema({
-name:{
-  type:String,
-  required:true 
-},
-pernamentAddress:addressSchema,
-temporaryAddress:addressSchema,
-contactNumber:{
-  type:Number,
-  required:true
-},
-email:{
-  type:String,
-  required:true 
-},
-relation:{
-  type:String,
-  required:true
-},
-citizenship:{
-  type:String,
-  required:true
-}, 
-})
+  name: {
+    type: String,
+    required: true,
+  },
+  permanentAddress: addressSchema,
+  temporaryAddress: addressSchema,
+  contactNumber: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  relation: {
+    type: String,
+    required: true,
+  },
+  citizenship: {
+    type: String,
+    required: true,
+  },
+});
 const requestSchema = new Schema({
-  userId:{
-    type:Schema.Types.ObjectId,
-    ref:"User"
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
+  fiscalYear: {
+    type: Schema.Types.ObjectId,
+    ref: "Fiscal",
   },
   name: {
     type: String,
     required: true,
   },
-  personalImage:{
-type:String
+  personalImage: {
+    type: String,
   },
   grandFatherName: {
     type: String,
@@ -71,7 +75,6 @@ type:String
   },
   spouseName: {
     type: String,
-    
   },
   citizenshipNo: {
     type: String,
@@ -127,33 +130,33 @@ type:String
   date: {
     type: String,
   },
-  identityNumber:{
-    type:String, 
+  identityNumber: {
+    type: String,
   },
-  remarks:{
-    type:String
+  remarks: {
+    type: String,
   },
-  shareCertificateNumber:{
-    type:String
+  shareCertificateNumber: {
+    type: String,
+    default: null,
   },
-  voucherImage:{
-    type:String
+  voucherImage: {
+    type: String,
   },
-  isPaid:{
-    type:Boolean,
-    default:false
+  isPaid: {
+    type: Boolean,
+    default: false,
   },
-  nid:{
-    type:String,
+  nid: {
+    type: String,
   },
-  dateofBirth:{
-    type:String
+  dateofBirth: {
+    type: String,
   },
-  shareApprovedDate:{
-    type:String,
+  shareApprovedDate: {
+    type: String,
   },
-  nominee:nomineeSchema
-  
+  nominee: nomineeSchema,
 });
 
 export const Request =
