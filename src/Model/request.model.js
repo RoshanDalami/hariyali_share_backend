@@ -34,7 +34,7 @@ const nomineeSchema = new Schema({
   },
   email: {
     type: String,
-    required: true,
+
   },
   relation: {
     type: String,
