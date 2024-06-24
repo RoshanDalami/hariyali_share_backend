@@ -21,7 +21,8 @@ import {
   GetUserTotalDeclinedRequest,
   GetUserTotalPendingRequest,
   GetUserDetails,
-  DeleteRequest
+  DeleteRequest,
+  GetApprovedRequestOfUser
 } from "../controller/request.controller.js";
 import { validateToken } from "../middleware/verifyToken.js";
 const RequestRouter = express.Router();
@@ -70,4 +71,5 @@ RequestRouter.route("/getUserAcceptedRequest").get(validateToken,GetUserTotalAcc
 RequestRouter.route("/getUserDeclinedRequest").get(validateToken,GetUserTotalDeclinedRequest)
 RequestRouter.route("/getDetailsWithNumber").get(validateToken,GetUserDetails)
 RequestRouter.route("/deleteRequest/:id").delete(validateToken,DeleteRequest)
+RequestRouter.route("/approvedRequestofUser").get(validateToken,GetApprovedRequestOfUser)
 export default RequestRouter;

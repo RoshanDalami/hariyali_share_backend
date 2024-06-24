@@ -204,6 +204,19 @@ export async function declineRequest(req, res) {
       .json(new ApiResponse(500, null, "Internal Server Error"));
   }
 }
+export async function GetApprovedRequestOfUser(req,res){
+  try {
+    const userId = req.user.id;
+    const response = await Request.find({$and:[{userId:userId},{isApproved:true}]});
+    if(!response ){
+      return res.status(400).json(new ApiResponse(400,null,"No Record with that userId"))
+    }
+    console.log(response);
+    return res.status(200).json(new ApiResponse(200,response,"List of Approved Request of User"))
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(200,null,"Internal Server Error"))
+  }
+}
 
 // export async function acceptRequest(req, res) {
 //   try {
