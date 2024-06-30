@@ -7584,3 +7584,22 @@ export async function GetPalika(req,res){
         return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
     }
 }
+export async function GetAllDistrict(req,res){
+    try {
+        const {stateId} = req.query;
+        const response = await District.find({});
+        return res.status(200).json(new ApiResponse(200,response,'District fetched successfully'))
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    }
+}
+
+export async function GetAllPalika(req,res){
+    try {
+        const {districtId} = req.query;
+        const response = await Palika.find({});
+        return res.status(200).json(new ApiResponse(200,response,"Palika fetched successfully"))
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500,null,"Internal Server Error"))
+    }
+}

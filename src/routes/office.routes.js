@@ -5,7 +5,9 @@ import {
     InsertState,
     GetDistrict,
     GetPalika,
-    GetState
+    GetState,
+    GetAllDistrict,
+    GetAllPalika
 } from '../controller/officesetup.controller.js'
 import {
     createFiscal,
@@ -21,6 +23,8 @@ officeRoute.route('/insertPalika').post(InsertPalika)
 officeRoute.route('/getState').get(GetState)
 officeRoute.route('/getDistrict').get(GetDistrict)
 officeRoute.route('/getPalika').get(GetPalika)
+officeRoute.route('/getAllDistrict').get(GetAllDistrict);
+officeRoute.route('/getAllPalika').get(GetAllPalika);
 officeRoute.route('/createFiscal').post(createFiscal)
 officeRoute.route('/getFiscal').get(getFiscal);
 officeRoute.route('/getFiscalYearById/:id').get(getFiscalYearById);
