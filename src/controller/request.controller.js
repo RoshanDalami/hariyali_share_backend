@@ -29,8 +29,24 @@ export async function CreateShareRequest(req, res) {
         .status(200)
         .json(new ApiResponse(200, response, "Updated successfully"));
     } else {
-      const frontImage = req?.files?.citizenshipFrontImage[0]?.path;
-      const personalImage = req?.files?.personalImage[0]?.path;
+      let frontImage;
+      if (
+        req.files &&
+        Array.isArray(req?.files?.citizenshipFrontImage) &&
+        req.files.citizenshipFrontImage.length > 0
+      ) {
+        frontImage = req?.files?.citizenshipFrontImage[0]?.path;
+      }
+
+      let personalImage;
+      if (
+        req.files &&
+        Array.isArray(req?.files?.personalImage) &&
+        req.files.personalImage.length > 0
+      ) {
+        personalImage = req?.files?.personalImage[0]?.path;
+      }
+
       let voucherImage;
       if (
         req.files &&
@@ -48,9 +64,9 @@ export async function CreateShareRequest(req, res) {
         ...body,
         permanentAddress: JSON.parse(body.permanentAddress),
         temporaryAddress: JSON.parse(body.temporaryAddress),
-        citizenshipFrontImage: frontImageCloudinary.url,
-        voucherImage: voucherImageCloudinary.url || "",
-        personalImage: personalImageCloudinary?.url,
+        citizenshipFrontImage: frontImageCloudinary?.url || "",
+        voucherImage: voucherImageCloudinary?.url || "",
+        personalImage: personalImageCloudinary?.url || "",
         totalShareAmount: JSON.parse(body.totalShareAmount),
         nominee: JSON.parse(body?.nominee),
         userId: userId,

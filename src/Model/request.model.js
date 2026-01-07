@@ -24,13 +24,11 @@ const addressSchema = new Schema({
 const nomineeSchema = new Schema({
   name: {
     type: String,
-    required: true,
   },
   permanentAddress: addressSchema,
   temporaryAddress: addressSchema,
   contactNumber: {
     type: String,
-    required: true,
   },
   email: {
     type: String,
@@ -38,11 +36,9 @@ const nomineeSchema = new Schema({
   },
   relation: {
     type: String,
-    required: true,
   },
   citizenship: {
     type: String,
-    required: true,
   },
 });
 const requestSchema = new Schema({
@@ -56,29 +52,24 @@ const requestSchema = new Schema({
   },
   name: {
     type: String,
-    required: true,
   },
   personalImage: {
     type: String,
   },
   grandFatherName: {
     type: String,
-    required: true,
   },
   fatherName: {
     type: String,
-    required: true,
   },
   motherName: {
     type: String,
-    required: true,
   },
   spouseName: {
     type: String,
   },
   citizenshipNo: {
     type: String,
-    required: true,
   },
   citizenshipFrontImage: {
     type: String,
